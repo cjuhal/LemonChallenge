@@ -78,9 +78,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.lemonchallenge"
+    namespace "com.juhalLemonChallenge"
     defaultConfig {
-        applicationId "com.lemonchallenge"
+        applicationId "com.juhalLemonChallenge"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
