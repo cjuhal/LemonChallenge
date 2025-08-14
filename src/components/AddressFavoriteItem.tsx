@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Modal, TouchableOpacity, Animated, Dimensions } from 'react-native';
 import { Text, IconButton, Surface, Button } from 'react-native-paper';
 import { Wallet, useWalletStore } from '../store/WalletStore';
-import NetworkImage from './NetworkImage';
+import CryptoImage from './CryptoImage';
 
 interface AddressFavoriteItemProps {
     wallet: Wallet;
@@ -41,7 +41,7 @@ export default function AddressFavoriteItem({ wallet }: AddressFavoriteItemProps
         <>
             <Surface style={styles.item} elevation={2}>
                 <View style={styles.row}>
-                    <NetworkImage network={wallet.network} size={48} />
+                    <CryptoImage symbol={wallet.network} size={48} />
 
                     <View style={{ flex: 1 }}>
                         <Text style={styles.networkText}>{wallet.network}</Text>
