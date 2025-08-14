@@ -1,0 +1,7 @@
+| Rol              | Color                   |
+| ---------------- | ----------------------- |
+| Primario         | Verde azulado `#22C55E` |
+| Fondo general    | Negro `#0E0F13`         |
+| Texto principal  | Blanco `#fff`           |
+| Texto secundario | Gris claro `#9CA3AF`    |
+| Divider / lineas | Gris oscuro `#222`      |
