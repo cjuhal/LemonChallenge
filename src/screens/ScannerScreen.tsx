@@ -3,8 +3,8 @@ import { View, StyleSheet } from 'react-native';
 import { Surface, Text, IconButton } from 'react-native-paper';
 import { Camera, useCameraDevices, useCodeScanner } from 'react-native-vision-camera';
 import { Wallet } from '../store/WalletStore';
-import AdressModal from '../components/AdressModal';
 import { parseWalletAddress } from '../utils/parsetWalletAdress';
+import AddressModal from '../components/AddressModal';
 
 export default function ScannerScreen() {
   const [last, setLast] = useState('');
@@ -77,7 +77,7 @@ export default function ScannerScreen() {
         />
       </Surface>
 
-      <AdressModal
+      <AddressModal
         visible={modalVisible}
         wallet={modalWallet}
         onClose={() => {

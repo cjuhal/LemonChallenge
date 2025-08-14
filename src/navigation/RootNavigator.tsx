@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MarketsScreen from '../screens/MarketsScreen';
 import ScannerScreen from '../screens/ScannerScreen';
-import AdressFavoriteList from '../screens/AdressFavoriteList';
+import AdressFavoriteList from '../screens/AddressFavoriteList';
 
 export type RootStackParamList = {
   Auth: undefined;

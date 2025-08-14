@@ -2,20 +2,19 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Modal, Image, TouchableOpacity, Clipboard } from 'react-native';
 import { Text, Button, Surface, IconButton } from 'react-native-paper';
 import { useWalletStore, Wallet } from '../store/WalletStore';
-import BTC from '@assets/Bitcoin.png';
-import ETH from '@assets/Ethereum.png';
-import LTC from '@assets/Ltc.png';
-import TRX from '@assets/trx.png';
-import CoinUnknow from '@assets/coin-unknow.png';
+import NetworkImage from './NetworkImage';
 
 interface Props {
     visible: boolean;
     wallet: Wallet | null;
     onClose: () => void;
 }
-export default function WalletModal({ visible, wallet, onClose }: Props) {
-    const { addWallet, toggleFavorite, favorites } = useWalletStore(); // <- agregamos favorites
+export default function AddressModal({ visible, wallet, onClose }: Props) {
     const [showAddress, setShowAddress] = useState(false);
+
+    const addWallet = useWalletStore(state => state.addWallet);
+    const toggleFavorite = useWalletStore(state => state.toggleFavorite);
+    const favorites = useWalletStore(state => state.favorites);
 
     if (!wallet) return null;
 
@@ -31,16 +30,6 @@ export default function WalletModal({ visible, wallet, onClose }: Props) {
         Clipboard.setString(wallet.address);
     };
 
-    const getNetworkImage = (network: string) => {
-        switch (network) {
-            case 'BTC': return BTC;
-            case 'ETH': return ETH;
-            case 'LTC': return LTC;
-            case 'TRX': return TRX;
-            default: return CoinUnknow;
-        }
-    };
-
     return (
         <Modal visible={visible} transparent animationType="slide">
             <View style={styles.overlay}>
@@ -52,7 +41,7 @@ export default function WalletModal({ visible, wallet, onClose }: Props) {
                     </View>
 
                     <View style={styles.imageContainer}>
-                        <Image source={getNetworkImage(wallet.network)} style={styles.networkImage} resizeMode="contain" />
+                        <NetworkImage network={wallet.network} size={48} />
                     </View>
 
                     <View style={styles.addressRow}>

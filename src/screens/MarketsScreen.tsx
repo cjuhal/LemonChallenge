@@ -18,18 +18,22 @@ export default function MarketsScreen() {
   const [priceMin, setPriceMin] = useState<number | undefined>();
   const [priceMax, setPriceMax] = useState<number | undefined>();
   const [onlyPositive, setOnlyPositive] = useState<boolean>(false);
-  
-  const clearStore = useWalletStore(state => state.clearHistory);
-   useEffect(() => {
+
+/*   
+//lo uso para reiniciar la memoria de la app al ingresar a la pantalla principal
+const clearStore = useWalletStore(state => state.clearHistory);
+  useEffect(() => {
     (async () => {
       // Limpiar AsyncStorage
       await AsyncStorage.removeItem('walletHistory');
       await AsyncStorage.removeItem('walletFavorites');
-      
+
       // Limpiar el store
       await clearStore();
     })();
-  }, []);
+  }, []); 
+  
+  */
 
   const query = useInfiniteQuery<MarketCoin[], Error>({
     queryKey: ['markets', order],
