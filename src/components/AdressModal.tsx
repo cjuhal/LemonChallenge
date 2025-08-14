@@ -13,36 +13,31 @@ interface Props {
     wallet: Wallet | null;
     onClose: () => void;
 }
-
 export default function WalletModal({ visible, wallet, onClose }: Props) {
-    const { addWallet, toggleFavorite } = useWalletStore();
+    const { addWallet, toggleFavorite, favorites } = useWalletStore(); // <- agregamos favorites
     const [showAddress, setShowAddress] = useState(false);
 
     if (!wallet) return null;
 
+    const isFavorite = favorites.some(f => f.address === wallet.address); // <- checkeo
+
     const handleAddFavorite = () => {
-        addWallet(wallet);
-        toggleFavorite(wallet);
+        if (!isFavorite) toggleFavorite(wallet);
+        addWallet(wallet); // opcional: siempre agregamos al historial
         onClose();
     };
 
     const copyToClipboard = () => {
         Clipboard.setString(wallet.address);
-        // Opcional: Toast o Snackbar
     };
 
     const getNetworkImage = (network: string) => {
         switch (network) {
-            case 'BTC':
-                return BTC;
-            case 'ETH':
-                return ETH;
-            case 'LTC':
-                return LTC;
-            case 'TRX':
-                return TRX;
-            default:
-                return CoinUnknow;
+            case 'BTC': return BTC;
+            case 'ETH': return ETH;
+            case 'LTC': return LTC;
+            case 'TRX': return TRX;
+            default: return CoinUnknow;
         }
     };
 
@@ -98,12 +93,13 @@ export default function WalletModal({ visible, wallet, onClose }: Props) {
                         </Button>
                         <Button
                             mode="contained"
-                            buttonColor="#22C55E"
+                            disabled={false} // no usar disabled para no perder color
+                            buttonColor={isFavorite ? '#9CA3AF' : '#22C55E'}
                             textColor="#fff"
-                            onPress={handleAddFavorite}
+                            onPress={isFavorite ? undefined : handleAddFavorite} // deshabilita acción
                             style={{ flex: 1, marginLeft: 8 }}
                         >
-                            Agregar a favoritos
+                            {isFavorite ? 'Ya es favorito' : 'Agregar a favoritos'}
                         </Button>
                     </View>
                 </Surface>
@@ -111,6 +107,7 @@ export default function WalletModal({ visible, wallet, onClose }: Props) {
         </Modal>
     );
 }
+
 
 const styles = StyleSheet.create({
     overlay: {
@@ -120,7 +117,7 @@ const styles = StyleSheet.create({
     },
     modal: {
         width: '100%',
-        backgroundColor: '#1F2937', 
+        backgroundColor: '#1F2937',
         borderTopLeftRadius: 16,
         borderTopRightRadius: 16,
         padding: 24,
