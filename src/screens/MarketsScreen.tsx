@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { useInfiniteQuery, type QueryFunctionContext } from '@tanstack/react-query';
 import { fetchMarkets, type MarketCoin } from '../services/coingecko';
@@ -7,6 +7,8 @@ import SearchBar from '../components/SearchBar';
 import SortFilterModal, { type SortOrder } from '../components/SortFilterModal';
 
 import { Surface, Text, ActivityIndicator, Divider } from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useWalletStore } from '../store/WalletStore';
 
 const PER_PAGE = 25;
 
@@ -16,6 +18,22 @@ export default function MarketsScreen() {
   const [priceMin, setPriceMin] = useState<number | undefined>();
   const [priceMax, setPriceMax] = useState<number | undefined>();
   const [onlyPositive, setOnlyPositive] = useState<boolean>(false);
+
+/*   
+//lo uso para reiniciar la memoria de la app al ingresar a la pantalla principal
+const clearStore = useWalletStore(state => state.clearHistory);
+  useEffect(() => {
+    (async () => {
+      // Limpiar AsyncStorage
+      await AsyncStorage.removeItem('walletHistory');
+      await AsyncStorage.removeItem('walletFavorites');
+
+      // Limpiar el store
+      await clearStore();
+    })();
+  }, []); 
+  
+  */
 
   const query = useInfiniteQuery<MarketCoin[], Error>({
     queryKey: ['markets', order],
