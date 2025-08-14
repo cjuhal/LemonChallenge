@@ -5,6 +5,7 @@ import LoginScreen from '../screens/LoginScreen';
 import { useAuth } from '../context/AuthContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MarketsScreen from '../screens/MarketsScreen';
+import ScannerScreen from '../screens/ScannerScreen';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -32,6 +33,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Markets" component={MarketsScreen} options={{ title: 'Criptos' }} />
+      <Tab.Screen name="Scanner" component={ScannerScreen} options={{ title: 'QR' }} />
     </Tab.Navigator>
   );
 }
