@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Dimensions, Animated } from 'react-native';
 import { TextInput } from 'react-native-paper';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -12,11 +12,24 @@ type Props = {
 export default function SearchBar({ value, onChangeText, onClear }: Props) {
   const [expanded, setExpanded] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const animation = useRef(new Animated.Value(0)).current;
 
-  const handleOpen = () => setExpanded(true);
+  const handleOpen = () => {
+    setExpanded(true);
+    Animated.timing(animation, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };
+
   const handleClose = () => {
     onClear();
-    setExpanded(false);
+    Animated.timing(animation, {
+      toValue: 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start(() => setExpanded(false));
   };
 
   useEffect(() => {
@@ -25,6 +38,11 @@ export default function SearchBar({ value, onChangeText, onClear }: Props) {
     }
   }, [expanded]);
 
+  const inputWidth = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [48, Dimensions.get('window').width - 16],
+  });
+
   return (
     <View style={styles.wrapper}>
       {!expanded ? (
@@ -32,7 +50,7 @@ export default function SearchBar({ value, onChangeText, onClear }: Props) {
           <MaterialIcons name="search" size={24} color="#fff" />
         </TouchableOpacity>
       ) : (
-        <View style={styles.inputContainer}>
+        <Animated.View style={[styles.inputContainer, { width: inputWidth }]}>
           <TextInput
             ref={inputRef}
             mode="flat"
@@ -47,18 +65,16 @@ export default function SearchBar({ value, onChangeText, onClear }: Props) {
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <MaterialIcons name="close" size={24} color="#9CA3AF" />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       )}
     </View>
   );
 }
 
-const { width } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
   wrapper: {
     marginVertical: 8,
-    alignItems: 'flex-end', // botón a la derecha
+    alignItems: 'flex-end',
   },
   floatingButton: {
     width: 48,
@@ -67,15 +83,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#22C55E',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 4, // sombra ligera
+    elevation: 4,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: width - 24, // ocupa casi todo el ancho
     backgroundColor: '#0c0e13',
     borderRadius: 12,
     paddingHorizontal: 8,
+    height: 48,
   },
   input: {
     flex: 1,

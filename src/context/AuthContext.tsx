@@ -5,7 +5,7 @@ import { Alert } from 'react-native';
 type AuthContextType = {
   user: User | null;
   initializing: boolean;
-  signIn: () => Promise<void>;
+  signIn: () => Promise<User | null>;
   signOut: () => Promise<void>;
 };
 
@@ -22,30 +22,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       forceCodeForRefreshToken: true,
     });
 
-    // Intentar reconstruir sesión
-    (async () => {
+    const restoreSession = async () => {
       try {
-        const isSignedIn = await GoogleSignin.isSignedIn();
-        if (isSignedIn) {
-          const current = await GoogleSignin.getCurrentUser();
-          if (current) setUser(current);
-        }
+        // obtenemos usuario actual si existe sesión
+        const currentUser = await GoogleSignin.getCurrentUser();
+        if (currentUser) setUser(currentUser);
       } catch (e) {
-        // noop
+        console.error('Error reconstruyendo sesión:', e);
       } finally {
         setInitializing(false);
       }
-    })();
+    };
+
+    restoreSession();
   }, []);
 
-  const signIn = async () => {
+  const signIn = async (): Promise<User | null> => {
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const result = await GoogleSignin.signIn();
+      if (!result) return null; // usuario canceló
       setUser(result);
+      return result;
     } catch (error: any) {
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        // usuario canceló
+        return null; // canceló manualmente
       } else if (error.code === statusCodes.IN_PROGRESS) {
         Alert.alert('Autenticación', 'Login en progreso…');
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
@@ -53,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         Alert.alert('Error', error?.message ?? 'No se pudo iniciar sesión');
       }
+      return null;
     }
   };
 
@@ -66,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value = useMemo(() => ({ user, initializing, signIn, signOut }), [user, initializing]);
+
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
