@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MarketsScreen from '../screens/MarketsScreen';
 import ScannerScreen from '../screens/ScannerScreen';
+import AdressFavoriteList from '../screens/AdressFavoriteList';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -26,6 +27,7 @@ function MainTabs() {
             Exchange: 'swap-horizontal',
             Scanner: 'qr-code',
             Wallets: 'wallet',
+            Favorites: 'star',
           };
           const name = map[route.name] ?? 'ellipse';
           return <Icon name={name} size={size} color={color} />;
@@ -34,6 +36,7 @@ function MainTabs() {
     >
       <Tab.Screen name="Markets" component={MarketsScreen} options={{ title: 'Criptos' }} />
       <Tab.Screen name="Scanner" component={ScannerScreen} options={{ title: 'QR' }} />
+      <Tab.Screen name="Favorites" component={AdressFavoriteList} options={{ title: 'Favotiros' }} />
     </Tab.Navigator>
   );
 }

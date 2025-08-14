@@ -1,25 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Surface, Text, IconButton } from 'react-native-paper';
-import { Camera, CameraPermissionStatus, useCameraDevices, useCodeScanner } from 'react-native-vision-camera';
-function parseWalletAddress(raw: string): { network: string; address: string } | null {
-  try {
-    const lower = raw.toLowerCase();
-    if (lower.startsWith('bitcoin:')) return { network: 'BTC', address: raw.split(':')[1] };
-    if (lower.startsWith('ethereum:')) return { network: 'ETH', address: raw.split(':')[1] };
-    if (lower.startsWith('litecoin:')) return { network: 'LTC', address: raw.split(':')[1] };
-    if (lower.startsWith('tron:')) return { network: 'TRX', address: raw.split(':')[1] };
-    if (raw.startsWith('0x') && raw.length >= 26) return { network: 'ETH', address: raw };
-    if (/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(raw)) return { network: 'BTC', address: raw };
-    return { network: 'UNKNOWN', address: raw };
-  } catch {
-    return null;
-  }
-}
+import { Camera, useCameraDevices, useCodeScanner } from 'react-native-vision-camera';
+import { Wallet } from '../store/WalletStore';
+import AdressModal from '../components/AdressModal';
+import { parseWalletAddress } from '../utils/parsetWalletAdress';
+
 export default function ScannerScreen() {
   const [last, setLast] = useState('');
   const [flash, setFlash] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
+  const [modalWallet, setModalWallet] = useState<Wallet | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const devices = useCameraDevices();
   const device = devices.find(d => d.position === 'back');
@@ -34,11 +26,11 @@ export default function ScannerScreen() {
       setLast(value);
 
       const parsed = parseWalletAddress(value);
-      if (!parsed) {
-        Alert.alert('QR inválido', 'No se reconoce una dirección de wallet.');
-        return;
-      }
-      Alert.alert('Wallet detectada', `${parsed.network}: ${parsed.address}`);
+      if (!parsed) return;
+
+      // Abrir modal con la wallet escaneada
+      setModalWallet(parsed);
+      setModalVisible(true);
     },
   });
 
@@ -72,7 +64,6 @@ export default function ScannerScreen() {
         torch={flash ? 'on' : 'off'}
         codeScanner={codeScanner}
       />
-
       <Surface style={styles.overlayBottom} elevation={4}>
         <Text variant="titleMedium" style={styles.help}>
           Apunta el QR de la wallet para escanear
@@ -85,10 +76,15 @@ export default function ScannerScreen() {
           style={styles.flashButton}
         />
       </Surface>
+
+      <AdressModal
+        visible={modalVisible}
+        wallet={modalWallet}
+        onClose={() => setModalVisible(false)}
+      />
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'black' },
