@@ -7,6 +7,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import MarketsScreen from '../screens/MarketsScreen';
 import ScannerScreen from '../screens/ScannerScreen';
 import AdressFavoriteList from '../screens/AddressFavoriteList';
+import SearchBar from '../components/SearchBar';
+import { useMarketStore } from '../store/MarketStore';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -16,11 +18,18 @@ export type RootStackParamList = {
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
 
+
+
 function MainTabs() {
+
+  const searchText = useMarketStore(state => state.searchText);
+  const setSearchText = useMarketStore(state => state.setSearchText);
+  const clearSearch = useMarketStore(state => state.clearSearch);
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerTitleAlign: 'center',
+        headerTitleAlign: 'left',
         tabBarIcon: ({ color, size }) => {
           const map: Record<string, string> = {
             Markets: 'trending-up',
@@ -34,7 +43,20 @@ function MainTabs() {
         },
       })}
     >
-      <Tab.Screen name="Markets" component={MarketsScreen} options={{ title: 'Criptos' }} />
+      <Tab.Screen
+        name="Markets"
+        component={MarketsScreen}
+        options={{
+          title: 'Criptos',
+          headerRight: () => (
+            <SearchBar
+              value={searchText}
+              onChangeText={setSearchText}
+              onClear={clearSearch}
+            />
+          ),
+        }}
+      />
       <Tab.Screen name="Scanner" component={ScannerScreen} options={{ title: 'QR' }} />
       <Tab.Screen name="Favorites" component={AdressFavoriteList} options={{ title: 'Favotiros' }} />
     </Tab.Navigator>

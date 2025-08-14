@@ -1,25 +1,23 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { useInfiniteQuery, type QueryFunctionContext } from '@tanstack/react-query';
 import { fetchMarkets, type MarketCoin } from '../services/coingecko';
 import CryptoListItem from '../components/CryptoListItem';
-import SearchBar from '../components/SearchBar';
 import SortFilterModal, { type SortOrder } from '../components/SortFilterModal';
-
-import { Surface, Text, ActivityIndicator, Divider } from 'react-native-paper';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useWalletStore } from '../store/WalletStore';
+import { Surface, Text, ActivityIndicator } from 'react-native-paper';
+import { useMarketStore } from '../store/MarketStore';
 
 const PER_PAGE = 25;
 
 export default function MarketsScreen() {
-  const [search, setSearch] = useState('');
+  const searchText = useMarketStore(state => state.searchText);
+
   const [order, setOrder] = useState<SortOrder>('market_cap_desc');
   const [priceMin, setPriceMin] = useState<number | undefined>();
   const [priceMax, setPriceMax] = useState<number | undefined>();
   const [onlyPositive, setOnlyPositive] = useState<boolean>(false);
 
-/*   
+  /*   
 //lo uso para reiniciar la memoria de la app al ingresar a la pantalla principal
 const clearStore = useWalletStore(state => state.clearHistory);
   useEffect(() => {
@@ -38,27 +36,31 @@ const clearStore = useWalletStore(state => state.clearHistory);
   const query = useInfiniteQuery<MarketCoin[], Error>({
     queryKey: ['markets', order],
     queryFn: async (param: QueryFunctionContext) => {
-      return fetchMarkets({ vs_currency: 'usd', order, page: param.pageParam as number, per_page: PER_PAGE });
+      return fetchMarkets({
+        vs_currency: 'usd',
+        order,
+        page: param.pageParam as number,
+        per_page: PER_PAGE,
+      });
     },
     getNextPageParam: (lastPage) => (lastPage.length === PER_PAGE ? lastPage.length + 1 : undefined),
     staleTime: 30_000,
     initialPageParam: 1,
   });
 
-
   const data = useMemo(() => {
     const flat = (query.data?.pages ?? []).flat() as MarketCoin[];
     const filtered = flat.filter((c: MarketCoin) => {
       const matchesSearch =
-        c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.symbol.toLowerCase().includes(search.toLowerCase());
+        c.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        c.symbol.toLowerCase().includes(searchText.toLowerCase());
       const inMin = priceMin == null || c.current_price >= priceMin;
       const inMax = priceMax == null || c.current_price <= priceMax;
       const pos = !onlyPositive || (c.price_change_percentage_24h ?? 0) >= 0;
       return matchesSearch && inMin && inMax && pos;
     });
     return filtered;
-  }, [query.data, search, priceMin, priceMax, onlyPositive]);
+  }, [query.data, searchText, priceMin, priceMax, onlyPositive]);
 
   const onEndReached = useCallback(() => {
     if (query.hasNextPage && !query.isFetchingNextPage) query.fetchNextPage();
@@ -73,13 +75,6 @@ const clearStore = useWalletStore(state => state.clearHistory);
 
   return (
     <Surface style={styles.container}>
-
-      <SearchBar
-        value={search}
-        onChangeText={setSearch}
-        onClear={() => setSearch('')}
-      />
-
       <SortFilterModal
         onFilterChange={onApply}
         initialOrder={order}
@@ -132,7 +127,6 @@ const clearStore = useWalletStore(state => state.clearHistory);
           ) : null
         }
       />
-
     </Surface>
   );
 }
@@ -142,5 +136,4 @@ const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center', paddingTop: 48 },
   muted: { color: '#9CA3AF', marginTop: 8 },
   error: { color: '#EF4444' },
-  divider: { backgroundColor: '#222', height: 1 },
 });
