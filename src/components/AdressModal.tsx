@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, StyleSheet, Modal, Image } from 'react-native';
-import { Text, Button, Surface } from 'react-native-paper';
+import React, { useState } from 'react';
+import { View, StyleSheet, Modal, Image, TouchableOpacity, Clipboard } from 'react-native';
+import { Text, Button, Surface, IconButton } from 'react-native-paper';
 import { useWalletStore, Wallet } from '../store/WalletStore';
 import BTC from '@assets/Bitcoin.png';
 import ETH from '@assets/Ethereum.png';
@@ -16,6 +16,7 @@ interface Props {
 
 export default function WalletModal({ visible, wallet, onClose }: Props) {
     const { addWallet, toggleFavorite } = useWalletStore();
+    const [showAddress, setShowAddress] = useState(false);
 
     if (!wallet) return null;
 
@@ -23,6 +24,11 @@ export default function WalletModal({ visible, wallet, onClose }: Props) {
         addWallet(wallet);
         toggleFavorite(wallet);
         onClose();
+    };
+
+    const copyToClipboard = () => {
+        Clipboard.setString(wallet.address);
+        // Opcional: Toast o Snackbar
     };
 
     const getNetworkImage = (network: string) => {
@@ -41,7 +47,7 @@ export default function WalletModal({ visible, wallet, onClose }: Props) {
     };
 
     return (
-        <Modal visible={visible} transparent animationType="fade">
+        <Modal visible={visible} transparent animationType="slide">
             <View style={styles.overlay}>
                 <Surface style={styles.modal} elevation={6}>
                     <View style={styles.header}>
@@ -50,14 +56,34 @@ export default function WalletModal({ visible, wallet, onClose }: Props) {
                         </Text>
                     </View>
 
-                    <View style={styles.addressContainer}>
-                        <Text variant="bodyMedium" numberOfLines={1} ellipsizeMode="middle" style={styles.address}>
-                            {wallet.address}
-                        </Text>
-                    </View>
-
                     <View style={styles.imageContainer}>
                         <Image source={getNetworkImage(wallet.network)} style={styles.networkImage} resizeMode="contain" />
+                    </View>
+
+                    <View style={styles.addressRow}>
+                        <Text
+                            variant="bodyMedium"
+                            style={styles.address}
+                            numberOfLines={showAddress ? undefined : 1}
+                            ellipsizeMode="middle"
+                        >
+                            {wallet.address}
+                        </Text>
+
+                        <View style={styles.addressButtons}>
+                            <IconButton
+                                icon={showAddress ? 'eye-off' : 'eye'}
+                                size={24}
+                                iconColor="#F9FAFB"
+                                onPress={() => setShowAddress(!showAddress)}
+                            />
+                            <IconButton
+                                icon="content-copy"
+                                size={24}
+                                iconColor="#F9FAFB"
+                                onPress={copyToClipboard}
+                            />
+                        </View>
                     </View>
 
                     <View style={styles.row}>
@@ -75,7 +101,7 @@ export default function WalletModal({ visible, wallet, onClose }: Props) {
                             buttonColor="#22C55E"
                             textColor="#fff"
                             onPress={handleAddFavorite}
-                            style={{ flex: 1, marginRight: 8 }}
+                            style={{ flex: 1, marginLeft: 8 }}
                         >
                             Agregar a favoritos
                         </Button>
@@ -89,48 +115,34 @@ export default function WalletModal({ visible, wallet, onClose }: Props) {
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 16,
+        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0,0,0,0.5)',
     },
     modal: {
         width: '100%',
-        backgroundColor: '#1F2937', // Dark gray background
-        borderRadius: 16,
+        backgroundColor: '#1F2937', 
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
         padding: 24,
         shadowColor: '#000',
         shadowOpacity: 0.3,
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: -4 },
         shadowRadius: 6,
     },
-    header: {
-        marginBottom: 12,
-    },
-    title: {
-        color: '#F9FAFB',
-        textAlign: 'center',
-    },
-    addressContainer: {
+    header: { marginBottom: 12 },
+    title: { color: '#F9FAFB', textAlign: 'center' },
+    imageContainer: { alignItems: 'center', marginBottom: 16 },
+    networkImage: { width: 60, height: 60 },
+    addressRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         backgroundColor: '#111827',
         padding: 12,
         borderRadius: 12,
-        marginVertical: 16,
+        marginBottom: 16,
     },
-    address: {
-        color: '#E5E7EB',
-        textAlign: 'center',
-    },
-    imageContainer: {
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    networkImage: {
-        width: 60,
-        height: 60,
-    },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
+    address: { color: '#E5E7EB', flex: 1 },
+    addressButtons: { flexDirection: 'row' },
+    row: { flexDirection: 'row', justifyContent: 'space-between' },
 });

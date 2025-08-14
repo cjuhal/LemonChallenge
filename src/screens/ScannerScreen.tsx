@@ -12,6 +12,7 @@ export default function ScannerScreen() {
   const [hasPermission, setHasPermission] = useState(false);
   const [modalWallet, setModalWallet] = useState<Wallet | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [scanBlocked, setScanBlocked] = useState(false); // <-- flag para bloquear escaneo
 
   const devices = useCameraDevices();
   const device = devices.find(d => d.position === 'back');
@@ -22,13 +23,12 @@ export default function ScannerScreen() {
     onCodeScanned: (codes) => {
       if (!codes?.length) return;
       const value = codes[0].value ?? '';
-      if (!value || value === last) return;
-      setLast(value);
+      if (!value || value === last || scanBlocked) return;
 
       const parsed = parseWalletAddress(value);
       if (!parsed) return;
 
-      // Abrir modal con la wallet escaneada
+      setLast(value);
       setModalWallet(parsed);
       setModalVisible(true);
     },
@@ -80,7 +80,15 @@ export default function ScannerScreen() {
       <AdressModal
         visible={modalVisible}
         wallet={modalWallet}
-        onClose={() => setModalVisible(false)}
+        onClose={() => {
+          setModalVisible(false);
+          setModalWallet(null);
+          setScanBlocked(true); // bloqueamos escaneo
+          setTimeout(() => {
+            setScanBlocked(false); // desbloqueamos después de 3 segundos
+            setLast(''); // reiniciamos last para permitir reescaneo
+          }, 3000);
+        }}
       />
     </View>
   );
