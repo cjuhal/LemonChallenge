@@ -54,3 +54,26 @@ export async function getSimplePrice(opts: {
   });
   return data;
 }
+
+export const getPrice = async (crypto: string, fiat: string) => {
+  const res = await axios.get(`/simple/price`, {
+    params: {
+      ids: crypto,
+      vs_currencies: fiat
+    }
+  });
+  return res.data[crypto][fiat];
+};
+
+export const getCryptoList = async () => {
+  const res = await axios.get(`/coins/markets`, {
+    params: {
+      vs_currency: "usd",
+      order: "market_cap_desc",
+      per_page: 50,
+      page: 1,
+      sparkline: false
+    }
+  });
+  return res.data;
+};

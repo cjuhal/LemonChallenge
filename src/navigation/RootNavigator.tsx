@@ -9,6 +9,7 @@ import ScannerScreen from '../screens/ScannerScreen';
 import AdressFavoriteList from '../screens/AddressFavoriteList';
 import SearchBar from '../components/SearchBar';
 import { useMarketStore } from '../store/MarketStore';
+import ExchangeScreen from '../screens/ExchangeScreen';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -58,6 +59,7 @@ function MainTabs() {
         }}
       />
       <Tab.Screen name="Scanner" component={ScannerScreen} options={{ title: 'QR' }} />
+      <Tab.Screen name="Exchange" component={ExchangeScreen} options={{ title: 'Exchange' }} />
       <Tab.Screen name="Favorites" component={AdressFavoriteList} options={{ title: 'Favotiros' }} />
     </Tab.Navigator>
   );
