@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Modal, Image, TouchableOpacity, Clipboard } from 'react-native';
 import { Text, Button, Surface, IconButton } from 'react-native-paper';
 import { useWalletStore, Wallet } from '../store/WalletStore';
-import NetworkImage from './NetworkImage';
+import CryptoImage from './CryptoImage';
 
 interface Props {
     visible: boolean;
@@ -41,7 +41,7 @@ export default function AddressModal({ visible, wallet, onClose }: Props) {
                     </View>
 
                     <View style={styles.imageContainer}>
-                        <NetworkImage network={wallet.network} size={48} />
+                        <CryptoImage symbol={wallet.network} size={48} />
                     </View>
 
                     <View style={styles.addressRow}>
