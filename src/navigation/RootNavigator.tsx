@@ -5,15 +5,21 @@ import LoginScreen from '../screens/LoginScreen';
 import { useAuth } from '../context/AuthContext';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MarketsScreen from '../screens/MarketsScreen';
-import ScannerScreen from '../screens/ScannerScreen';
-import AdressFavoriteList from '../screens/AddressFavoriteList';
 import SearchBar from '../components/SearchBar';
 import { useMarketStore } from '../store/MarketStore';
 import ExchangeScreen from '../screens/ExchangeScreen';
+import WalletListScreen from '../screens/WalletListScreen';
+import QRScreen from '../screens/QRScreen';
+import { Wallet } from '../store/WalletStore';
+import WalletDetailScreen from '../screens/WalletDetailScreen';
 
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
+  WalletDetail: {
+    wallet: Wallet;
+    exists: boolean;
+  };
 };
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -33,11 +39,10 @@ function MainTabs() {
         headerTitleAlign: 'left',
         tabBarIcon: ({ color, size }) => {
           const map: Record<string, string> = {
-            Markets: 'trending-up',
+            Market: 'trending-up',
             Exchange: 'swap-horizontal',
-            Scanner: 'qr-code',
+            QR: 'qr-code',
             Wallets: 'wallet',
-            Favorites: 'star',
           };
           const name = map[route.name] ?? 'ellipse';
           return <Icon name={name} size={size} color={color} />;
@@ -45,10 +50,10 @@ function MainTabs() {
       })}
     >
       <Tab.Screen
-        name="Markets"
+        name="Market"
         component={MarketsScreen}
         options={{
-          title: 'Criptos',
+          title: 'Market',
           headerRight: () => (
             <SearchBar
               value={searchText}
@@ -58,22 +63,35 @@ function MainTabs() {
           ),
         }}
       />
-      <Tab.Screen name="Scanner" component={ScannerScreen} options={{ title: 'QR' }} />
+      <Tab.Screen name="QR" component={QRScreen} options={{ title: 'QR' }} />
       <Tab.Screen name="Exchange" component={ExchangeScreen} options={{ title: 'Exchange' }} />
-      <Tab.Screen name="Favorites" component={AdressFavoriteList} options={{ title: 'Favotiros' }} />
+      <Tab.Screen name="Wallets" component={WalletListScreen} options={{ title: 'Wallets' }} />
     </Tab.Navigator>
   );
 }
 
+
 export default function RootNavigator() {
-  const { user, initializing } = useAuth();
+  const { user } = useAuth();
 
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
         <RootStack.Screen name="Auth" component={LoginScreen} />
       ) : (
-        <RootStack.Screen name="Main" component={MainTabs} />
+        <>
+          <RootStack.Screen name="Main" component={MainTabs} />
+          <RootStack.Screen
+            name="WalletDetail"
+            component={WalletDetailScreen}
+            options={{
+              headerShown: true,
+              title: 'Resumen de Wallet',
+              headerStyle: { backgroundColor: '#0E0F13' },
+              headerTintColor: '#fff',
+            }}
+          />
+        </>
       )}
     </RootStack.Navigator>
   );
