@@ -22,6 +22,7 @@ La aplicación fue desarrollada en **React Native 0.80.2** y está preparada par
 
 - git clone <REPO_URL>
 - cd LemonChallenge
+- utilizar branch master
 
 2. Instalar dependencias:
 yarn install
