@@ -27,7 +27,10 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     set({ history, favorites });
   },
 
+
   addWallet: async (wallet) => {
+    if (wallet.network === 'UNKNOWN') return;
+
     const exists = get().history.find(w => w.address === wallet.address);
     if (!exists) {
       const newHistory = [...get().history, wallet];
@@ -35,6 +38,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       await AsyncStorage.setItem('walletHistory', JSON.stringify(newHistory));
     }
   },
+
 
   toggleFavorite: async (wallet) => {
     const isFav = get().favorites.some(f => f.address === wallet.address);

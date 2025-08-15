@@ -1,14 +1,30 @@
+import WAValidator from 'multicoin-address-validator';
+
+const symbolToNetwork: Record<string, string> = {
+  BTC: 'bitcoin',
+  ETH: 'ethereum',
+  LTC: 'litecoin',
+  TRX: 'tron',
+  DOGE: 'dogecoin',
+  DASH: 'dash',
+  XRP: 'ripple',
+  ZEC: 'zcash',
+  XMR: 'monero',
+};
+
 export function parseWalletAddress(raw: string) {
-  try {
-    const lower = raw.toLowerCase();
-    if (lower.startsWith('bitcoin:')) return { network: 'BTC', address: raw.split(':')[1] };
-    if (lower.startsWith('ethereum:')) return { network: 'ETH', address: raw.split(':')[1] };
-    if (lower.startsWith('litecoin:')) return { network: 'LTC', address: raw.split(':')[1] };
-    if (lower.startsWith('tron:')) return { network: 'TRX', address: raw.split(':')[1] };
-    if (raw.startsWith('0x') && raw.length >= 26) return { network: 'ETH', address: raw };
-    if (/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(raw)) return { network: 'BTC', address: raw };
-    return { network: 'UNKNOWN', address: raw };
-  } catch {
-    return null;
+  // Si viene con formato "network:address", separar
+  const [maybeNetwork, maybeAddress] = raw.includes(':') ? raw.split(':') : [null, raw];
+  const address = (maybeAddress || maybeNetwork).trim();
+
+  for (const [symbol, network] of Object.entries(symbolToNetwork)) {
+    if (WAValidator.validate(address, network)) {
+      return {
+        network: symbol,
+        address
+      };
+    }
   }
+
+  return { network: 'UNKNOWN', address };
 }

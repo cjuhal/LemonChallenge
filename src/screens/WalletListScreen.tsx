@@ -1,24 +1,31 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { FlatList, StyleSheet, Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { View, FlatList, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
 import { useWalletStore } from '../store/WalletStore';
-import AddressFavoriteItem from '../components/AddressFavoriteItem';
+import WalletsItem from '../components/WalletItem';
 
-const FILTERS = ['Todas', 'BTC', 'ETH', 'LTC', 'TRX', 'Otros'];
+const FILTERS = ['Todas', 'Favoritas', 'BTC', 'ETH', 'LTC', 'TRX', 'Otros'];
 
-export default function AddressFavoriteList() {
+export default function WalletListScreen() {
+  const history = useWalletStore(state => state.history);
   const favorites = useWalletStore(state => state.favorites);
   const loadWallets = useWalletStore(state => state.loadWallets);
+
   const [selectedFilter, setSelectedFilter] = useState('Todas');
 
   useEffect(() => {
     loadWallets();
   }, [loadWallets]);
 
-  const filteredFavorites = useMemo(() => {
-    if (selectedFilter === 'Todas') return favorites;
-    if (selectedFilter === 'Otros') return favorites.filter(f => !['BTC', 'ETH', 'LTC', 'TRX'].includes(f.network));
-    return favorites.filter(f => f.network === selectedFilter);
-  }, [favorites, selectedFilter]);
+  const filteredWallets = useMemo(() => {
+    let wallets: typeof history = [];
+
+    if (selectedFilter === 'Todas') wallets = history;
+    else if (selectedFilter === 'Favoritas') wallets = history.filter(w => favorites.some(f => f.address === w.address));
+    else if (selectedFilter === 'Otros') wallets = history.filter(w => !['BTC', 'ETH', 'LTC', 'TRX'].includes(w.network));
+    else wallets = history.filter(w => w.network === selectedFilter);
+
+    return wallets;
+  }, [history, favorites, selectedFilter]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0E0F13' }}>
@@ -49,13 +56,13 @@ export default function AddressFavoriteList() {
       {/* Listado */}
       <View style={{ flex: 1 }}>
         <FlatList
-          data={filteredFavorites}
+          data={filteredWallets}
           keyExtractor={(item, index) => `${item.network}_${item.address}_${index}`}
-          renderItem={({ item }) => <AddressFavoriteItem wallet={item} />}
+          renderItem={({ item }) => <WalletsItem wallet={item} />}
           contentContainerStyle={{ padding: 16 }}
           ListEmptyComponent={
             <Text style={{ textAlign: 'center', marginTop: 20, color: '#9CA3AF' }}>
-              No hay wallets en favoritos
+              No hay wallets
             </Text>
           }
         />
@@ -66,7 +73,7 @@ export default function AddressFavoriteList() {
 
 const styles = StyleSheet.create({
   filterWrapper: {
-    height: 48, // altura fija para el scroll
+    height: 48,
     justifyContent: 'center',
     backgroundColor: '#0E0F13',
   },
