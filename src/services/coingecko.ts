@@ -56,14 +56,33 @@ export async function getSimplePrice(opts: {
 }
 
 export const getPrice = async (crypto: string, fiat: string) => {
-  const res = await axios.get(`/simple/price`, {
-    params: {
-      ids: crypto,
-      vs_currencies: fiat
-    }
-  });
-  return res.data[crypto][fiat];
+  try {
+    const res = await api.get(`/simple/price`, {
+      params: { symbols: crypto, vs_currencies: fiat },
+    });
+    return res.data[crypto][fiat];
+  } catch (err) {
+    console.log('Error getPrice:', err);
+    return null;
+  }
 };
+
+export async function getCryptoDetails(opts: {
+  symbol: string;
+  vs_currency: string;
+}) {
+  const { data } = await api.get("/coins/markets", {
+    params: {
+      vs_currency: opts.vs_currency,
+      symbols: opts.symbol.toLowerCase(),
+    },
+  });
+
+  if (!data || !data[0]) return null;
+
+  return data[0]; // devolvemos todo el objeto de CoinGecko
+}
+
 
 export const getCryptoList = async () => {
   const res = await axios.get(`/coins/markets`, {

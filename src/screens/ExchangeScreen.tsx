@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Text, TextInput, IconButton } from "react-native-paper";
-import { useQuery } from "@tanstack/react-query";
-import { getPrice } from "../services/coingecko";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getPrice, getCryptoDetails } from "../services/coingecko";
 import CryptoImage from "../components/CryptoImage";
 import FiatImage from "../components/FiatImage";
 import CurrencySelectorModal from "../components/CurrencySelectorModal";
+import CryptoDetailsCard from "../components/CryptoDetailCard";
 
-// Listas de monedas
 const cryptos = [
   { id: "bitcoin", symbol: "BTC" },
   { id: "ethereum", symbol: "ETH" },
@@ -23,6 +23,8 @@ const fiats = [
 ];
 
 export default function ExchangeScreen() {
+  const queryClient = useQueryClient();
+
   const [fromCurrency, setFromCurrency] = useState(cryptos[0]);
   const [toCurrency, setToCurrency] = useState(fiats[0]);
   const [fromAmount, setFromAmount] = useState("1");
@@ -30,50 +32,140 @@ export default function ExchangeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectingField, setSelectingField] = useState<"from" | "to">("from");
 
-  // Tipos de cada fila
   const [fromType, setFromType] = useState<"crypto" | "fiat">("crypto");
   const [toType, setToType] = useState<"crypto" | "fiat">("fiat");
 
-  const { data: price, refetch } = useQuery({
+  const lastEdited = useRef<"from" | "to">("from");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Query para precio
+  const {
+    data: price,
+    isLoading: priceLoading,
+    isError: priceError,
+    refetch: refetchPrice,
+  } = useQuery({
     queryKey: ["price", fromCurrency.id, toCurrency.id],
-    queryFn: () =>
-      getPrice(
-        fromType === "crypto" ? fromCurrency.id : toCurrency.id,
-        toType === "fiat" ? toCurrency.symbol.toLowerCase() : fromCurrency.symbol.toLowerCase()
-      ),
+    queryFn: async () => {
+      if (!fromCurrency?.symbol || !toCurrency?.symbol) throw new Error("Monedas incompletas");
+
+      setErrorMessage(null);
+      let cryptoSymbol: string, fiatSymbol: string, invert: boolean;
+
+      if (fromType === "crypto" && toType === "fiat") {
+        cryptoSymbol = fromCurrency.symbol.toLowerCase();
+        fiatSymbol = toCurrency.symbol.toLowerCase();
+        invert = false;
+      } else if (fromType === "fiat" && toType === "crypto") {
+        cryptoSymbol = toCurrency.symbol.toLowerCase();
+        fiatSymbol = fromCurrency.symbol.toLowerCase();
+        invert = true;
+      } else {
+        throw new Error("La API solo soporta crypto ↔ fiat");
+      }
+
+      const result = await getPrice(cryptoSymbol, fiatSymbol);
+      return invert ? 1 / result : result;
+    },
     enabled: false,
+    staleTime: 15000,
+    refetchOnWindowFocus: false,
+    refetchInterval: 15000,
+    onError: () => setErrorMessage("Error de la consulta"),
   });
 
-  // Calcular al cambiar monto o precio
-  useEffect(() => {
-    if (price && fromAmount) {
-      setToAmount((parseFloat(fromAmount) * price).toFixed(6));
-    }
-  }, [price, fromAmount]);
+  // Query para detalles
+  const {
+    data: cryptoData,
+    isLoading: detailsLoading,
+    isError: detailsError,
+    refetch: refetchDetails,
+  } = useQuery({
+    queryKey: [
+      "cryptoDetails",
+      fromType === "crypto" ? fromCurrency.symbol : toCurrency.symbol,
+      toCurrency.symbol,
+    ],
+    queryFn: async () => {
+      if (!fromCurrency?.symbol || !toCurrency?.symbol) throw new Error("Monedas incompletas");
 
+      setErrorMessage(null);
+      const symbol = fromType === "crypto" ? fromCurrency.symbol : toCurrency.symbol;
+      const vsCurrency = fromType === "crypto" ? toCurrency.symbol : fromCurrency.symbol;
+
+      const data = await getCryptoDetails({
+        symbol: symbol.toLowerCase(),
+        vs_currency: vsCurrency.toLowerCase(),
+      });
+
+      return data;
+    },
+    enabled: false,
+    refetchInterval: 15000,
+    onError: () => setErrorMessage("Error de la consulta"),
+  });
+
+  // Actualizar conversión
   useEffect(() => {
-    if (fromCurrency && toCurrency) {
-      refetch();
+    if (price) {
+      if (lastEdited.current === "from" && fromAmount) {
+        setToAmount((parseFloat(fromAmount) * price).toFixed(6));
+      } else if (lastEdited.current === "to" && toAmount) {
+        setFromAmount((parseFloat(toAmount) / price).toFixed(6));
+      }
+    }
+  }, [price]);
+
+  // Refetch cuando cambian las monedas, solo si hay símbolos válidos
+  useEffect(() => {
+    if (fromCurrency?.symbol && toCurrency?.symbol) {
+      setFromAmount("");
+      setToAmount("");
+      refetchPrice();
+      refetchDetails();
     }
   }, [fromCurrency, toCurrency]);
 
   const handleFromAmountChange = (value: string) => {
+    lastEdited.current = "from";
     setFromAmount(value);
-    if (price) setToAmount((parseFloat(value || "0") * price).toFixed(6));
+    if (!value) {
+      setToAmount("");
+      return;
+    }
+    if (price) {
+      setToAmount((parseFloat(value) * price).toFixed(6));
+    } else {
+      refetchPrice();
+    }
   };
 
   const handleToAmountChange = (value: string) => {
+    lastEdited.current = "to";
     setToAmount(value);
-    if (price) setFromAmount((parseFloat(value || "0") / price).toFixed(6));
+    if (!value) {
+      setFromAmount("");
+      return;
+    }
+    if (price) {
+      setFromAmount((parseFloat(value) / price).toFixed(6));
+    } else {
+      refetchPrice();
+    }
   };
 
   const handleSelectCurrency = (currency) => {
     if (selectingField === "from") setFromCurrency(currency);
     else setToCurrency(currency);
+
+    setFromAmount("");
+    setToAmount("");
+    setErrorMessage(null);
+    queryClient.removeQueries({ queryKey: ["price"] });
+    queryClient.removeQueries({ queryKey: ["cryptoDetails"] });
     setModalVisible(false);
   };
 
-  // Swap de monedas y tipos
   const swapCurrencies = () => {
     setFromCurrency(toCurrency);
     setToCurrency(fromCurrency);
@@ -85,9 +177,12 @@ export default function ExchangeScreen() {
     setToType(tempType);
   };
 
+  const isLoading = priceLoading || detailsLoading;
+  const hasError = priceError || detailsError || !!errorMessage;
+
   return (
     <View style={styles.container}>
-      {/* Fila 1 */}
+      <Text style={styles.label}>Cambiar ({fromCurrency.symbol})</Text>
       <View style={styles.row}>
         <TouchableOpacity
           style={styles.currencySelector}
@@ -114,7 +209,6 @@ export default function ExchangeScreen() {
         />
       </View>
 
-      {/* Botón swap */}
       <IconButton
         icon="swap-vertical"
         size={28}
@@ -123,7 +217,7 @@ export default function ExchangeScreen() {
         iconColor="#22C55E"
       />
 
-      {/* Fila 2 */}
+      <Text style={styles.label}>Recibir ({toCurrency.symbol})</Text>
       <View style={styles.row}>
         <TouchableOpacity
           style={styles.currencySelector}
@@ -150,7 +244,20 @@ export default function ExchangeScreen() {
         />
       </View>
 
-      {/* Modal */}
+      {cryptoData && !detailsLoading && (
+        <CryptoDetailsCard
+          data={cryptoData}
+          fiatSymbol={fromType === "crypto" ? toCurrency.symbol : fromCurrency.symbol}
+        />
+      )}
+
+      {isLoading && <ActivityIndicator color="#22C55E" />}
+      {hasError && (
+        <Text style={{ color: "red", marginBottom: 8 }}>
+          {errorMessage || "Error de la consulta"}
+        </Text>
+      )}
+
       <CurrencySelectorModal
         visible={modalVisible}
         onDismiss={() => setModalVisible(false)}
@@ -160,8 +267,8 @@ export default function ExchangeScreen() {
               ? cryptos
               : fiats
             : toType === "crypto"
-            ? cryptos
-            : fiats
+              ? cryptos
+              : fiats
         }
         type={selectingField === "from" ? fromType : toType}
         onSelect={handleSelectCurrency}
@@ -173,6 +280,7 @@ export default function ExchangeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#0E0F13" },
   row: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
+  label: { color: "#fff", fontSize: 14, marginBottom: 6 },
   currencySelector: {
     flexDirection: "row",
     alignItems: "center",
