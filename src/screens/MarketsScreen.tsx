@@ -1,93 +1,98 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { useInfiniteQuery, type QueryFunctionContext } from '@tanstack/react-query';
-import { fetchMarkets, type MarketCoin } from '../services/coingecko';
+import { fetchMarkets, type MarketCoin, SortOrder } from '../services/coingecko';
 import CryptoListItem from '../components/CryptoListItem';
-import SortFilterModal, { type SortOrder } from '../components/SortFilterModal';
 import { Surface, Text, ActivityIndicator } from 'react-native-paper';
 import { useMarketStore } from '../store/MarketStore';
-
-const PER_PAGE = 25;
+import AdvancedFilterModal, { type PriceFilterOption } from '../components/AdvancedFilterModal';
+import OrderFilterBar from '../components/OrderFilterBar';
 
 export default function MarketsScreen() {
   const searchText = useMarketStore(state => state.searchText);
 
   const [order, setOrder] = useState<SortOrder>('market_cap_desc');
+  const [includeTokens, setIncludeTokens] = useState<'top' | 'all'>('top');
   const [priceMin, setPriceMin] = useState<number | undefined>();
   const [priceMax, setPriceMax] = useState<number | undefined>();
-  const [onlyPositive, setOnlyPositive] = useState<boolean>(false);
-
-  /*   
-//lo uso para reiniciar la memoria de la app al ingresar a la pantalla principal
-const clearStore = useWalletStore(state => state.clearHistory);
-  useEffect(() => {
-    (async () => {
-      // Limpiar AsyncStorage
-      await AsyncStorage.removeItem('walletHistory');
-      await AsyncStorage.removeItem('walletFavorites');
-
-      // Limpiar el store
-      await clearStore();
-    })();
-  }, []); 
-  
-  */
+  const [perPage, setPerPage] = useState<number>(50);
+  const [priceOption, setPriceOption] = useState<PriceFilterOption>('all');
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
 
   const query = useInfiniteQuery<MarketCoin[], Error>({
-    queryKey: ['markets', order],
+    queryKey: ['markets', order, perPage, includeTokens],
     queryFn: async (param: QueryFunctionContext) => {
       return fetchMarkets({
         vs_currency: 'usd',
-        order,
+        order: order ?? 'market_cap_desc',
         page: param.pageParam as number,
-        per_page: PER_PAGE,
+        per_page: perPage,
+        include_tokens: includeTokens,
       });
     },
-    getNextPageParam: (lastPage) => (lastPage.length === PER_PAGE ? lastPage.length + 1 : undefined),
+    getNextPageParam: (lastPage, allPages) => (lastPage.length === perPage ? allPages.length + 1 : undefined),
     staleTime: 30_000,
     initialPageParam: 1,
   });
 
   const data = useMemo(() => {
     const flat = (query.data?.pages ?? []).flat() as MarketCoin[];
-    const filtered = flat.filter((c: MarketCoin) => {
+    return flat.filter(c => {
       const matchesSearch =
         c.name.toLowerCase().includes(searchText.toLowerCase()) ||
         c.symbol.toLowerCase().includes(searchText.toLowerCase());
+
       const inMin = priceMin == null || c.current_price >= priceMin;
       const inMax = priceMax == null || c.current_price <= priceMax;
-      const pos = !onlyPositive || (c.price_change_percentage_24h ?? 0) >= 0;
+
+      const pos =
+        priceOption === 'all'
+          ? true
+          : priceOption === 'positive'
+            ? (c.price_change_percentage_24h ?? 0) >= 0
+            : (c.price_change_percentage_24h ?? 0) < 0;
+
       return matchesSearch && inMin && inMax && pos;
     });
-    return filtered;
-  }, [query.data, searchText, priceMin, priceMax, onlyPositive]);
+  }, [query.data, searchText, priceMin, priceMax, priceOption]);
 
   const onEndReached = useCallback(() => {
     if (query.hasNextPage && !query.isFetchingNextPage) query.fetchNextPage();
   }, [query.hasNextPage, query.isFetchingNextPage]);
 
-  const onApply = (p: { order?: SortOrder; priceMin?: number; priceMax?: number; onlyPositive?: boolean }) => {
-    if (p.order) setOrder(p.order);
-    setPriceMin(p.priceMin);
-    setPriceMax(p.priceMax);
-    setOnlyPositive(!!p.onlyPositive);
+  const onApplyFilters = (filters: {
+    priceMin?: number;
+    priceMax?: number;
+    perPage?: number;
+    priceOption?: PriceFilterOption;
+  }) => {
+    setPriceMin(filters.priceMin);
+    setPriceMax(filters.priceMax);
+    setPerPage(filters.perPage ?? 50);
+    setPriceOption(filters.priceOption ?? 'all');
   };
 
   return (
     <Surface style={styles.container}>
-      <SortFilterModal
-        onFilterChange={onApply}
-        initialOrder={order}
-        initialPriceMin={priceMin}
-        initialPriceMax={priceMax}
-        initialOnlyPositive={onlyPositive}
-      />
+      {/* Header de filtros con altura fija */}
+      <View style={{ height: 50 }}>
+        <OrderFilterBar
+          initialOrder={order}
+          initialInclude={includeTokens}
+          onChange={(newOrder, newInclude) => {
+            setOrder(newOrder);
+            setIncludeTokens(newInclude);
+          }}
+          onOpenAdvancedFilter={() => setShowAdvancedFilter(true)}
+        />
+      </View>
 
+      {/* FlatList ocupando el resto de la pantalla */}
       <FlatList
         data={data}
-        keyExtractor={(item: MarketCoin, index) => `${item.id}-${index}`}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={({ item }) => <CryptoListItem item={item} />}
-        contentContainerStyle={{ paddingVertical: 8 }}
+        contentContainerStyle={{ flexGrow: 1 }}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.4}
         refreshControl={
@@ -98,26 +103,24 @@ const clearStore = useWalletStore(state => state.clearHistory);
           />
         }
         ListEmptyComponent={
-          query.isLoading ? (
-            <View style={styles.center}>
-              <ActivityIndicator animating size="large" />
-              <Text variant="bodyMedium" style={styles.muted}>
-                Cargando criptomonedas…
-              </Text>
-            </View>
-          ) : query.isError ? (
-            <View style={styles.center}>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            {query.isLoading ? (
+              <>
+                <ActivityIndicator animating size="large" />
+                <Text variant="bodyMedium" style={styles.muted}>
+                  Cargando criptomonedas…
+                </Text>
+              </>
+            ) : query.isError ? (
               <Text variant="bodyMedium" style={styles.error}>
                 Hubo un error al cargar. Desliza hacia abajo para reintentar.
               </Text>
-            </View>
-          ) : (
-            <View style={styles.center}>
+            ) : (
               <Text variant="bodyMedium" style={styles.muted}>
                 No se encontraron resultados.
               </Text>
-            </View>
-          )
+            )}
+          </View>
         }
         ListFooterComponent={
           query.isFetchingNextPage ? (
@@ -127,13 +130,23 @@ const clearStore = useWalletStore(state => state.clearHistory);
           ) : null
         }
       />
+
+      <AdvancedFilterModal
+        visible={showAdvancedFilter}
+        initialPriceMin={priceMin}
+        initialPriceMax={priceMax}
+        initialPerPage={perPage}
+        initialPriceOption={priceOption}
+        onApply={onApplyFilters}
+        onClose={() => setShowAdvancedFilter(false)}
+      />
     </Surface>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0B0D12', padding: 12 },
-  center: { alignItems: 'center', justifyContent: 'center', paddingTop: 48 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 48, },
   muted: { color: '#9CA3AF', marginTop: 8 },
   error: { color: '#EF4444' },
 });
