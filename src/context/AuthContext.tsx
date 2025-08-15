@@ -3,7 +3,7 @@ import { GoogleSignin, statusCodes, User } from '@react-native-google-signin/goo
 import { Alert } from 'react-native';
 
 type AuthContextType = {
-  user: User | null;
+  user: User | any | null;
   initializing: boolean;
   signIn: () => Promise<User | null>;
   signOut: () => Promise<void>;
@@ -24,11 +24,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const restoreSession = async () => {
       try {
-        // obtenemos usuario actual si existe sesión
-        const currentUser = await GoogleSignin.getCurrentUser();
+        const currentUser = await GoogleSignin.signInSilently();
         if (currentUser) setUser(currentUser);
       } catch (e) {
-        console.error('Error reconstruyendo sesión:', e);
+        console.log('No hay sesión activa:', e);
       } finally {
         setInitializing(false);
       }
@@ -41,19 +40,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const result = await GoogleSignin.signIn();
-      if (!result) return null; // usuario canceló
-      setUser(result);
+      if (!result) return null;
+      setUser(result?.data);
       return result;
     } catch (error: any) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        return null; // canceló manualmente
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        Alert.alert('Autenticación', 'Login en progreso…');
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert('Error', 'Google Play Services no disponible/actualizado.');
-      } else {
-        Alert.alert('Error', error?.message ?? 'No se pudo iniciar sesión');
-      }
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) return null;
+      else if (error.code === statusCodes.IN_PROGRESS) Alert.alert('Autenticación', 'Login en progreso…');
+      else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) Alert.alert('Error', 'Google Play Services no disponible/actualizado.');
+      else Alert.alert('Error', error?.message ?? 'No se pudo iniciar sesión');
       return null;
     }
   };
