@@ -1,4 +1,5 @@
 import axios from 'axios';
+export type SortOrder = 'market_cap_desc' | 'market_cap_asc';
 
 const api = axios.create({
   baseURL: 'https://api.coingecko.com/api/v3',
@@ -20,7 +21,8 @@ export async function fetchMarkets(params: {
   vs_currency: string;
   page: number;
   per_page: number;
-  order: 'market_cap_desc' | 'market_cap_asc' | 'price_desc' | 'price_asc';
+  order: SortOrder;
+  include_tokens: 'top' | 'all';
 }): Promise<MarketCoin[]> {
   const { data } = await api.get('/coins/markets', {
     params: {
@@ -30,6 +32,7 @@ export async function fetchMarkets(params: {
       page: params.page,
       sparkline: false,
       price_change_percentage: '24h',
+      include_tokens: params.include_tokens,
     },
   });
   return data;

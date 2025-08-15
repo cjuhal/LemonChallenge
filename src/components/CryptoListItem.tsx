@@ -32,7 +32,7 @@ function CryptoListItemBase({ item }: Props) {
       </Surface>
       <Surface style={styles.priceContainer} elevation={0} mode="flat">
         <Text variant="titleMedium" style={styles.price}>
-          {`${item.current_price.toFixed(2).toLocaleString()} USD`}
+          {`${!!item?.current_price ? item?.current_price.toFixed(2).toLocaleString() : '0.00'} USD`}
         </Text>
         <Text
           variant="bodySmall"
