@@ -4,23 +4,27 @@ import { useAuth } from '../context/AuthContext';
 import { Button, Text, Surface, ActivityIndicator } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Logo from '@assets/logo.png';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/RootNavigator';
 
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      const result = await signIn(); // devuelve User | null
+      const result = await signIn();
       if (!result) {
         setError('No se inició sesión con Google.');
+        return;
       }
     } catch (err) {
-      console.error('Error Google Sign-In:', err);
       setError('Hubo un problema al iniciar sesión con Google.');
     } finally {
       setLoading(false);
@@ -52,7 +56,7 @@ export default function LoginScreen() {
             contentStyle={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 50 }}
             labelStyle={styles.googleText}
           >
-            Continuar con Google
+            {loading ? 'Iniciando...' : 'Continuar con Google'}
           </Button>
         </View>
       </Surface>
@@ -61,14 +65,12 @@ export default function LoginScreen() {
         Christian Juhal - Lemon Challenge 2025
       </Text>
 
-      {/* Loading Overlay */}
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#22C55E" />
         </View>
       )}
 
-      {/* Error Overlay */}
       {error && (
         <View style={styles.errorOverlay}>
           <View style={styles.errorBox}>

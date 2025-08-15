@@ -73,10 +73,9 @@ function MainTabs() {
 
 export default function RootNavigator() {
   const { user } = useAuth();
-
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
-      {!user ? (
+      {!user?.data && !user?.user ? (
         <RootStack.Screen name="Auth" component={LoginScreen} />
       ) : (
         <>

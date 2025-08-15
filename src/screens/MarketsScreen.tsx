@@ -7,6 +7,7 @@ import { Surface, Text, ActivityIndicator } from 'react-native-paper';
 import { useMarketStore } from '../store/MarketStore';
 import AdvancedFilterModal, { type PriceFilterOption } from '../components/AdvancedFilterModal';
 import OrderFilterBar from '../components/OrderFilterBar';
+import UserCard from '../components/UserCard';
 
 export default function MarketsScreen() {
   const searchText = useMarketStore(state => state.searchText);
@@ -74,6 +75,10 @@ export default function MarketsScreen() {
 
   return (
     <Surface style={styles.container}>
+      <View style={{ alignItems: 'center', marginBottom: 40 }}>
+        <UserCard />
+      </View>
+
       {/* Header de filtros con altura fija */}
       <View style={{ height: 50 }}>
         <OrderFilterBar
