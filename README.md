@@ -20,9 +20,8 @@ La aplicación fue desarrollada en **React Native 0.80.2** y está preparada par
 
 1. Clonar el repositorio:
 
-bash
-git clone <REPO_URL>
-cd LemonChallenge
+- git clone <REPO_URL>
+- cd LemonChallenge
 
 2. Instalar dependencias:
 yarn install
@@ -107,3 +106,6 @@ Xcode (para iOS)
 Dispositivo o emulador para pruebas
 
 Conexión a internet
+
+# Ejemplos
+En assets/qr_examples se pueden encontrar ejemplos de QR para escanear que se probaron como caso de éxito al detectar redes con libreria.
